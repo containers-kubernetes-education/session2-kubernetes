@@ -131,5 +131,5 @@ persistentvolumes
 configmaps
 secrets
 ```
-So lets move onto the branch `step1-setting-up-our-namespace` to get started creating our application in a Kubernetes cluster.
+So lets move onto the branch `step1-setting-up-minikube` to get started creating our application in a Kubernetes cluster
 
