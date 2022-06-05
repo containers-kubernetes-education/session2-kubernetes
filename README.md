@@ -1,135 +1,51 @@
 # Session2-kubernetes
 
-This is the starting point for session number 2. This session looks to go through some of the concepts and aims for using a cloud like environment, like Kubernetes.
+Kubernetes clusters come in all shapes and size, and are designed around reliability, resilience and scalability. This does mean it can be fairly complex to get start with a brand new cluster with no previous experience. Thankfully Minikube was developed to help with local development and education purposes. However Minikube is not a HA environment and isnt recommended for production use.
 
-## Summary of session 1
+There are numerous stages during this section which are required to have local kubernetes clusters to work, but are NOT typical in standard practice. I will try to highlight any occasion we are doing things for the sake of local dev / minikube specifics as not to confuse with normal k8s practices.
 
-Before we get started, here is some of the important information that we covered in the last session:
-- We covered how to build a container image using a dockerfile
-- How to run a container in a local container environment (docker/podman):
-    - how to handle container networks to expose and route connectivity through to our application
-    - how to use non-ephemeral storage to hold state within an application
-- Also quickly looked at how to use containers to perform some work (compiling go code in the last session) rather than just "running an application"
+## Setup
 
-
-## Concepts
-
-Before we start using a Kubernetes cluster, id first like to go through and explain some of the core concepts and justifications, for at least the components that we will be using today.
-
-### Why is Kubernetes needed?
-
-Normally one of the first questions people ask when getting start with Kubernetes is why do I need it? What does it offer over something like native docker or podman? A lot of it comes down to the more "enterprise" aspect to the runtime, but lets explore some of the major differences.
-
-When we think of a container runtime like a docker engine, this could be a simple server with a docker/podman daemon running. But we want this container runtime to be able to run multiple applications (could be infrastructure/user applications), so we can setup something a little like this:
- 
-![](./images/DockerEngine.PNG)
-
-Each app might consist of a few containers (e.g a database, web front end, etc). And this is actually within itself much of an issue. Docker and podman even have the capabilities to put both of these applications on different networks, for separation and security reasons.
-
-But there are several issues that can start to arise:
-1. How do I manage team level access to these applications?
-1. How do I control scaling my applications?
-1. What happens if application 1 can horizontally scale, consuming all the resources of the docker engine?
-1. What happens if my application size simply outgrows the size of a single docker engine?
-
-Its questions like this which lead to Kubernetes, as the larger and more complicated our applications/runtimes/team-structure/etc become, the harder and harder it becomes to manage within a docker/podman runtime. So the Kubernetes project was start with the idea of container orchestration focusing on the application level. It provides capabilities and advantages over using a standard docker/podman environment.
-
-To start off, a Kubernetes environment is usually a cluster, looking a little like this:
-
-![](./images/SimpleK8s.PNG)
-
-Where each node (control plane and normal) is its own machine/VM. You can quickly see then how Kubernetes is starting to build a resiliency picture. Having multiple nodes in which I can run containers within allows for simple fail overs. But this isnt the only picture, as this more focuses on the hardware. If we look at a Kubernetes cluster from an application perspective, it looks more like this:
-
-![](./images/AppK8s.PNG)
-
-Within a Kubernetes cluster, we have the concepts of a namespace which allows me to logically isolate my application, plus:
-- Each namespace has its own logically isolated network
-- Access to a namespace can be made role based (RBAC)
-- A namespace isn't limited to a single node, so I can run additional instances (replicas) across multiples physical of hardware. (Not even geographically limited)
-- Persistent storage is managed by Kubernetes, not the nodes. This means we can have data replication/backup/DR put in place with no additional application requirements.
-- Access to Ingressing to allow for simple DNS resolution for applications.
-- And so much more!
-
-So in a environment, which is considerable more complex and dynamic than a simple docker engine, how does everything get create, tied together, and held in a working state (especially in the event of a node outage). A good place to start is to describe Kubernetes reconciliation. 
-
-Reconciliation is the name given to the looped logic that drives all the components inside of Kubernetes. It is a cyclical process that starts looking at the desired state of the cluster. Then performing an observation step, retrieves the current state of the cluster. If there are any differences between the desired and observed state, something called a controller will perform actions to move the cluster into a desired state. The process then repeats. It does this for every single type of "object" that is defined within a cluster, normally with a controller specific to each object.
-
-For example, I could have a desired state updated by a user for an application with 2 containers to be expanded to 3. This change in desired state will be detected by a controller which looks at how the state was defined (as this can be done in several ways) which would result in a third container being created dynamically. This process of comparing state whether number of replicas, port numbers, storage size, etc is all completed in a similar fashion.
-
-### Kubernetes Objects
-
-Up until this point I have also referred to out containers as containers, and not the more typical "pod" which you will see in Kubernetes documentation and environment. They have a different name in k8s, as it is actually referring a pod of containers meaning we can have a group of containers within the same network (another sub network of the namespace). However, its is typical to see one container running inside one pod, and usually the multiple containers running inside one pod is a initialization step. We will look at this more later on.
-
-Pods are not the only new object that we will encounter today, but the list of objects supported in kubernetes is quite significant: 
+### Starting the cluster
+Once you have minikube installed, it should automatically discover which container runtime you are using (docker/podman) and allow us to bring up a cluster in a single command:
 ```
-bindings
-componentstatuses
-configmaps
-endpoints
-events
-limitranges
-namespaces
-nodes
-persistentvolumeclaims
-persistentvolumes
-pods
-podtemplates
-replicationcontrollers
-resourcequotas
-secrets
-serviceaccounts
-services
-mutatingwebhookconfigurations
-validatingwebhookconfigurations
-customresourcedefinitions
-apiservices
-controllerrevisions
-daemonsets
-deployments
-replicasets
-statefulsets
-tokenreviews
-localsubjectaccessreviews
-selfsubjectaccessreviews
-selfsubjectrulesreviews
-subjectaccessreviews
-horizontalpodautoscalers
-cronjobs
-jobs
-certificatesigningrequests
-leases
-endpointslices
-events
-flowschemas
-prioritylevelconfigurations
-ingressclasses
-ingresses
-networkpolicies
-runtimeclasses
-poddisruptionbudgets
-podsecuritypolicies
-clusterrolebindings
-clusterroles
-rolebindings
-roles
-priorityclasses
-csidrivers
-csinodes
-csistoragecapacities
-storageclasses
-volumeattachments
+minikube start
 ```
-And these are just the natively supported ones. So to avoid this session becoming to textbook heavy style of learning about objects, we are going to look/create at today:
+If required there are additional flags that can be passed to customize the cluster. For this education we will be using a slightly different start up command:
+```
+minikube start --ports=127.0.0.1:31463:31463
+```
+This is done as during my testing with podman in WSL2 on windows, its required to allow for our browser to reach our application. This is not usually required on MAC OS as the container running our cluster is running natively and is easily accessed. This is also not something we have to be worried about in a production environment, as the networking aspect will already completed by any administrators.
 
-```
-namespaces
-pods
-deployments
-services
-persistentvolumeclaims
-persistentvolumes
-configmaps
-secrets
-```
-So lets move onto the branch `step1-setting-up-our-namespace` to get started creating our application in a Kubernetes cluster.
+### Making our image available
 
+Jumping ahead a little, we are going to be running our container in a new isolated environment from our build environment. This is very typical to a real environment, but we are not going to be doing this in a typical manner to make things simpler. But to explain typical behavior first, looking at this image: 
+
+![](./images/Registry.PNG)
+
+We normally have any container images defined, built and pushed to a registry. From a registry we can pull the image definition and run instances of the container without the need to build. This is important in a k8s cluster as typically a cluster consists of multiple nodes, so we need the image to be easily accessible as the hardware out application is running on could change dynamically.
+
+Kubernetes and minikube do both have a container registry built in to store pulled images in to save network load, but these are normally populated as a container is requested. The first check will be the local registry, then an external one like dockerhub etc. I you run the command `minikube image ls`, you can see what current images are held in your cluster.
+
+So what we want to do to be able to run our application is have access to our image. Some version of minikube will dynamically look at locally built images and make them available to the cluster, but not all. So to be explicit and ensure that our cluster can see the image, we can ask minikube to build and deploy the image to the cluster. So if you are in the directory of this README.md you can run the command:
+```
+# Its important not to use the tag of latest as by your cluster will always try to 
+# pull the latest from dockerhub. Tagging an exact version will prevent this
+
+minikube image build -t namesapp:v1 --all .
+```
+This will still use your default container runtime to build our application (and compile it using a builder container in this case). Once built, running the `minikube image ls` should now show our image, which by default normally gets tagged to the dockerhub registry `docker.io/library/namesapp:v1`
+
+_Again i would like to highlight this is not typical. It is normally expected to push your containers images to a registry that is accessible to your cluster so it can pull dynamically as needed._
+
+### Accessing the cluster
+
+Minikube does offer a way to run kubernetes commands against the cluster using `minikube kubectl -- XXXX` where XXXX is any normal request, e.g `minikube kubectl -- get pods`. To make your life easier and to look more like normal kubernetes commands you can alias this with something like:
+```
+alias kubectl="minikube kubectl --"
+```
+This will allow you to use kubectl "normally". If you already have proper kubectl installed, you can configure it to look at your minikube cluster and avoid doing this.
+
+Running a a `kubectl get pods` should return a message like `No resources found in default namespace.` which means you now have access to  your cluster.
+
+You can now move to the branch `step2-building-our-application` to start setting up our application now we have a cluster to work in
