@@ -27,7 +27,7 @@ spec:
       - name: names
         image: docker.io/library/namesapp:v1
         ports:
-        - containerPort: 8081
+        - containerPort: 8766
           name: http
         volumeMounts:
         - name: datadir

@@ -1,20 +1,6 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: names
-  namespace: kubernetes-education
-  labels:
-    app: names
-spec:
-  ports:
-  - port: 8081
-    name: http
-  selector:
-    app: names
----
-apiVersion: v1
-kind: Service
-metadata:
   name: names-external
   namespace: kubernetes-education
 spec:
