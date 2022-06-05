@@ -23,5 +23,5 @@ FROM scratch
 COPY --from=builder /go/bin/run /go/bin/run
 COPY assets /assets
 COPY data/names.json /data/names.json
-COPY config/defaults.json /config
+COPY config/defaults.json /config/defaults.json
 ENTRYPOINT ["/go/bin/run"]
