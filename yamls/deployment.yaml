@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: names
+  namespace: kubernetes-education
+  labels:
+    app: names
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: names
+  template:
+    metadata:
+      name: names
+      labels:
+        app: names
+    spec:
+      initContainers:
+      - name: init-data
+        image: busybox:1.28
+        command: ['sh', '-c', 'chown 200 /data']
+        volumeMounts:
+        - name: datadir
+          mountPath: /data
+      containers:
+      - name: names
+        image: docker.io/library/namesapp:v1
+        ports:
+        - containerPort: 8081
+          name: http
+        volumeMounts:
+        - name: datadir
+          mountPath: /data
+        - name: defaults
+          mountPath: /config
+        resources:
+          requests:
+            cpu: "4"
+      volumes:
+      - name: defaults
+        configMap:
+          name: config
+      - name: datadir
+        persistentVolumeClaim:
+          claimName: data-pvc

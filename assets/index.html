@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+ <title>An Example Table</title>
+</head>
+
+<body>
+  <h1>List of Names</h1>
+  <table>
+    <tr>
+      <th>Id</th>
+      <th>Names</th>
+    </tr>
+  </table>
+  <br/>
+  <form action="/save" method="post">
+    Name:
+    <input type="text" name="name">
+    <br/>
+    <input type="submit" value="Save">
+  </form>
+  <script>
+    names = document.querySelector("table")
+    fetch("/names")
+      .then(response => response.json())
+      .then(nameList => {
+        nameList.forEach(n => {
+          row = document.createElement("tr")
+          cN = document.createElement("td")
+          cN.innerHTML = n.name
+          id = document.createElement("td")
+          id.innerHTML = n.id
+          row.appendChild(id)
+          row.appendChild(cN)
+          names.appendChild(row)
+        })
+      })
+  </script>
+</body>

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: kubernetes-education
+data:
+  defaults.json: |
+    {
+      "names": [
+        "alan",
+        "jess"
+      ]
+    }
+
