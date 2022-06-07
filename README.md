@@ -291,3 +291,8 @@ If we apply this yaml:
 kubectl apply -f yamls/svc.yaml
 ```
 We should then be able to access our application through `localhost:31463` (or what ever port was provisioned for you `kubectl get svc` to see)
+
+If you are on a mac, and didnt open the port for use, you can tunnel it through using:
+```
+minikube service names-external --url -n kubernetes-education
+```
